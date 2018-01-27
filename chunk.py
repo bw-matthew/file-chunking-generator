@@ -17,8 +17,8 @@ def chunk(source, limit=DEFAULT_LIMIT, delimiter=DEFAULT_DELIMITER):
             yield BytesIO(remainder + buffer)
             continue
 
-        data, delimiter, remainder = buffer.rpartition(remainder + delimiter)
-        if not delimiter:
+        data, delim, remainder = (remainder + buffer).rpartition(delimiter)
+        if not delim:
             raise ValueError('No delimiter found within chunk')
 
-        yield BytesIO(data + delimiter)
+        yield BytesIO(data + delim)
