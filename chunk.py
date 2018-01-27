@@ -8,17 +8,27 @@ DEFAULT_DELIMITER = b'\n'
 def chunk(source, limit=DEFAULT_LIMIT, delimiter=DEFAULT_DELIMITER):
     remainder = b''
     while True:
-        size = limit - len(remainder)
-        buffer = source.read(size)
+        buffer = _read(source, remainder, limit)
         if not buffer:
             return
 
-        if len(buffer) < size:
-            yield BytesIO(remainder + buffer)
+        if _is_within_limit(buffer, limit):
+            yield BytesIO(buffer)
             continue
 
-        data, delim, remainder = (remainder + buffer).rpartition(delimiter)
-        if not delim:
-            raise ValueError('No delimiter found within chunk')
+        data, remainder = _partition(buffer, delimiter)
+        yield BytesIO(data)
 
-        yield BytesIO(data + delim)
+def _read(source, remainder, limit):
+    size = limit - len(remainder)
+    buffer = source.read(size)
+    return remainder + buffer
+
+def _is_within_limit(buffer, limit):
+    return len(buffer) < limit
+
+def _partition(buffer, delimiter):
+    data, delim, remainder = buffer.rpartition(delimiter)
+    if not delim:
+        raise ValueError('No delimiter found within chunk')
+    return data + delim, remainder
