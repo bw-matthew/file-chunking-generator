@@ -14,10 +14,9 @@ def chunk(source, limit=DEFAULT_LIMIT, delimiter=DEFAULT_DELIMITER):
 
         if _is_within_limit(buffer, limit):
             yield BytesIO(buffer)
-            continue
-
-        data, remainder = _partition(buffer, delimiter)
-        yield BytesIO(data)
+        else:
+            data, remainder = _partition(buffer, delimiter)
+            yield BytesIO(data)
 
 def _read(source, remainder, limit):
     size = limit - len(remainder)
