@@ -31,3 +31,11 @@ def test_medium_input_two_output():
 
     with raises(StopIteration):
         next(generator)
+
+def test_medium_input_no_delimiter():
+    source = BytesIO(b'0123456789')
+
+    generator = chunk(source, limit=6, delimiter=b'9')
+
+    with raises(ValueError):
+        next(generator)
