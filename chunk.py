@@ -8,9 +8,14 @@ DEFAULT_DELIMITER = b'\n'
 def chunk(source, limit=DEFAULT_LIMIT, delimiter=DEFAULT_DELIMITER):
     remainder = b''
     while True:
-        buffer = source.read(limit - len(remainder))
+        size = limit - len(remainder)
+        buffer = source.read(size)
         if not buffer:
             return
+
+        if len(buffer) < size:
+            yield BytesIO(remainder + buffer)
+            continue
 
         data, delimiter, remainder = buffer.rpartition(remainder + delimiter)
         if not delimiter:
