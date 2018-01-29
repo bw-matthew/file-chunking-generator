@@ -57,3 +57,4 @@ def test_medium_input_limited_file():
     handle.close()
 
     assert content == b'012345'
+    assert handle.remainder == b'6789'
