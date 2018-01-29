@@ -70,4 +70,6 @@ class LimitedFile(RawIOBase):
 
     def _write(self, output, output_size, data):
         output[:], self.remainder = data[:output_size], data[output_size:]
-        return output_size
+        read_size = min(len(data), output_size)
+        self.limit = self.limit - read_size
+        return read_size
