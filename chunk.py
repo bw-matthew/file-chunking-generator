@@ -46,11 +46,8 @@ class LimitedFile(RawIOBase):
         if self.limit < 1:
             return 0
 
-        buffer_size = len(buffer)
+        buffer_size = min(len(buffer), self.limit)
         remainder_size = len(self.remainder)
-
-        if buffer_size > self.limit:
-            buffer_size = self.limit
 
         if buffer_size <= remainder_size:
             buffer[:], self.remainder = self.remainder[:buffer_size], self.remainder[buffer_size:]
