@@ -54,7 +54,7 @@ class LimitedFile(RawIOBase):
         output_size = min(len(output), self.limit)
         remainder_size = len(self.remainder)
 
-        if output_size <= remainder_size:
+        if remainder_size > output_size:
             return self._write(output, output_size, self.remainder)
 
         read_size = self.source.readinto(self.buffer)
