@@ -6,7 +6,12 @@ DEFAULT_LIMIT = 1024 * 1024
 DEFAULT_BUFFER_SIZE = 4 * 1024
 DEFAULT_DELIMITER = b'\n'
 
-def chunk(source, limit=DEFAULT_LIMIT, delimiter=DEFAULT_DELIMITER):
+def chunk(
+        source,
+        limit=DEFAULT_LIMIT,
+        delimiter=DEFAULT_DELIMITER,
+        buffer_size=DEFAULT_BUFFER_SIZE
+):
     remainder = b''
     while True:
         buffer = _read(source, remainder, limit)
@@ -42,24 +47,27 @@ class LimitedFile(RawIOBase):
         self.buffer = bytearray(buffer_size)
         self.remainder = remainder
 
-    def readinto(self, buffer):
+    def readinto(self, output):
         if self.limit < 1:
             return 0
 
-        buffer_size = min(len(buffer), self.limit)
+        output_size = min(len(output), self.limit)
         remainder_size = len(self.remainder)
 
-        if buffer_size <= remainder_size:
-            buffer[:], self.remainder = self.remainder[:buffer_size], self.remainder[buffer_size:]
-            return buffer_size
+        if output_size <= remainder_size:
+            return self._write(output, output_size, self.remainder)
 
         read_size = self.source.readinto(self.buffer)
         if read_size + remainder_size == 0:
             return 0
 
         data = self.remainder + self.buffer[:read_size]
-        buffer[:], self.remainder = data[:buffer_size], data[buffer_size:]
+        output[:], self.remainder = data[:output_size], data[output_size:]
 
-        return_size = min(buffer_size, read_size)
+        return_size = min(output_size, read_size)
         self.limit = self.limit - return_size
         return return_size
+
+    def _write(self, output, output_size, data):
+        output[:], self.remainder = data[:output_size], data[output_size:]
+        return output_size
