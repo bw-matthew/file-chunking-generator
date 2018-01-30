@@ -59,12 +59,10 @@ class LimitedReader(RawIOBase):
         read_size = len(raw_data)
 
         if read_size > self.limit:
-            try:
-                delimiter_index = raw_data.index(self.delimiter, max(self.limit - 1, 0))
+            delimiter_index = raw_data.find(self.delimiter, max(self.limit - 1, 0))
+            if delimiter_index != -1:
                 self.eof = True
                 return self._write(output, delimiter_index + 1, raw_data)
-            except ValueError:
-                pass
 
         if read_size < output_size:
             self.eof = True
