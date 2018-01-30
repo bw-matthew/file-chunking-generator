@@ -12,6 +12,25 @@ def chunk(
         delimiter=DEFAULT_DELIMITER,
         buffer_size=DEFAULT_BUFFER_SIZE
 ):
+    last = LimitedReader(source, limit=limit, delimiter=delimiter, buffer_size=buffer_size)
+    yield last
+
+    while True:
+        if not last.eof:
+            raise ValueError("You have not finished reading the previous chunk")
+        if last.source_eof and not last.remainder:
+            break
+
+        current = LimitedReader(
+            source,
+            limit=limit,
+            delimiter=delimiter,
+            buffer_size=buffer_size,
+            remainder=last.remainder
+        )
+        yield current
+        last = current
+
     remainder = b''
     while True:
         buffer = _read(source, remainder, limit)
@@ -55,14 +74,15 @@ class LimitedReader(RawIOBase):
         self.buffer = bytearray(buffer_size)
         self.remainder = remainder
         self.eof = False
+        self.source_eof = False
 
     def readinto(self, output):
         if self.eof:
             return 0
 
-        raw_data = self._read(len(output))
-        read_size = len(raw_data)
         output_size = len(output)
+        raw_data = self._read(output_size)
+        read_size = len(raw_data)
 
         if read_size > self.limit:
             try:
@@ -82,11 +102,16 @@ class LimitedReader(RawIOBase):
         if len(self.remainder) >= size:
             raw_data = self.remainder
         else:
-            read_size = self.source.readinto(self.buffer)
-            raw_data = self.remainder + self.buffer[:read_size]
+            raw_data = self._read_source()
 
         data, self.remainder = raw_data[:size], raw_data[size:]
         return data
+
+    def _read_source(self):
+        read_size = self.source.readinto(self.buffer)
+        if read_size < len(self.buffer):
+            self.source_eof = True
+        return self.remainder + self.buffer[:read_size]
 
     def _write(self, output, output_size, data):
         output[:], self.remainder = data[:output_size], data[output_size:]

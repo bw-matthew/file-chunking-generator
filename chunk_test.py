@@ -7,6 +7,9 @@ def test_no_input_no_output():
 
     generator = chunk(source)
 
+    handle = next(generator)
+    assert handle.read() == b''
+
     with raises(StopIteration):
         next(generator)
 
@@ -37,10 +40,13 @@ def test_medium_input_no_delimiter():
 
     generator = chunk(source, limit=6, delimiter=b'9')
 
-    with raises(ValueError):
+    handle = next(generator)
+    assert handle.read() == b'0123456789'
+
+    with raises(StopIteration):
         next(generator)
 
-def test_small_input_limited_file():
+def test_limited_reader_with_small_input():
     source = BytesIO(b'0123456789')
 
     handle = LimitedReader(source, limit=20, delimiter=b'5')
@@ -49,7 +55,7 @@ def test_small_input_limited_file():
 
     assert content == b'0123456789'
 
-def test_medium_input_limited_file():
+def test_limited_reader_with_medium_input():
     source = BytesIO(b'0123456789')
 
     handle = LimitedReader(source, limit=6, delimiter=b'5')
@@ -58,3 +64,12 @@ def test_medium_input_limited_file():
 
     assert content == b'012345'
     assert handle.remainder == b'6789'
+
+def test_limited_reader_with_medium_input_and_trailing_delimiter():
+    source = BytesIO(b'0123456789')
+
+    handle = LimitedReader(source, limit=6, delimiter=b'9')
+    content = handle.read()
+    handle.close()
+
+    assert content == b'0123456789'
