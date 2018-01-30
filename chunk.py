@@ -66,7 +66,6 @@ class LimitedReader(RawIOBase):
 
         if read_size < output_size:
             self.eof = True
-            return self._write(output, read_size, raw_data)
 
         return self._write(output, read_size, raw_data)
 
