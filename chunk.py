@@ -38,31 +38,55 @@ def _partition(buffer, delimiter):
         raise ValueError('No delimiter found within chunk')
     return data + delim, remainder
 
-class LimitedFile(RawIOBase):
+class LimitedReader(RawIOBase):
 
-    def __init__(self, source, limit=DEFAULT_LIMIT, buffer_size=DEFAULT_BUFFER_SIZE, remainder=b''):
+    def __init__(
+            self,
+            source,
+            limit=DEFAULT_LIMIT,
+            delimiter=DEFAULT_DELIMITER,
+            buffer_size=DEFAULT_BUFFER_SIZE,
+            remainder=b''
+    ):
         super().__init__()
         self.source = source
         self.limit = limit
+        self.delimiter = delimiter
         self.buffer = bytearray(buffer_size)
         self.remainder = remainder
+        self.eof = False
 
     def readinto(self, output):
-        if self.limit < 1:
+        if self.eof:
             return 0
 
-        output_size = min(len(output), self.limit)
-        remainder_size = len(self.remainder)
+        raw_data = self._read(len(output))
+        read_size = len(raw_data)
+        output_size = len(output)
 
-        if remainder_size > output_size:
-            return self._write(output, output_size, self.remainder)
+        if read_size > self.limit:
+            try:
+                delimiter_index = raw_data.index(self.delimiter, max(self.limit - 1, 0))
+                self.eof = True
+                return self._write(output, delimiter_index + 1, raw_data)
+            except ValueError:
+                pass
 
-        read_size = self.source.readinto(self.buffer)
-        if read_size + remainder_size == 0:
-            return 0
+        if read_size < output_size:
+            self.eof = True
+            return self._write(output, read_size, raw_data)
 
-        data = self.remainder + self.buffer[:read_size]
-        return self._write(output, output_size, data)
+        return self._write(output, read_size, raw_data)
+
+    def _read(self, size):
+        if len(self.remainder) >= size:
+            raw_data = self.remainder
+        else:
+            read_size = self.source.readinto(self.buffer)
+            raw_data = self.remainder + self.buffer[:read_size]
+
+        data, self.remainder = raw_data[:size], raw_data[size:]
+        return data
 
     def _write(self, output, output_size, data):
         output[:], self.remainder = data[:output_size], data[output_size:]

@@ -1,5 +1,5 @@
 from io import BytesIO
-from chunk import chunk, LimitedFile
+from chunk import chunk, LimitedReader
 from pytest import raises
 
 def test_no_input_no_output():
@@ -43,7 +43,7 @@ def test_medium_input_no_delimiter():
 def test_small_input_limited_file():
     source = BytesIO(b'0123456789')
 
-    handle = LimitedFile(source)
+    handle = LimitedReader(source, limit=20, delimiter=b'5')
     content = handle.read()
     handle.close()
 
@@ -52,7 +52,7 @@ def test_small_input_limited_file():
 def test_medium_input_limited_file():
     source = BytesIO(b'0123456789')
 
-    handle = LimitedFile(source, limit=6)
+    handle = LimitedReader(source, limit=6, delimiter=b'5')
     content = handle.read()
     handle.close()
 
