@@ -51,10 +51,25 @@ class LimitedReader(RawIOBase):
         self.source_eof = False
 
     def readinto(self, output):
+        output_size = len(output)
+        offset = 0
+        while offset < output_size:
+            if self.eof:
+                return offset
+
+            read_size = self._readinto(output, offset)
+            if not read_size:
+                self.eof = True
+                return offset
+            offset = offset + read_size
+
+        return offset
+
+    def _readinto(self, output, offset):
         if self.eof:
             return 0
 
-        output_size = len(output)
+        output_size = len(output) - offset
         raw_data = self._read(output_size)
         read_size = len(raw_data)
 
@@ -63,12 +78,9 @@ class LimitedReader(RawIOBase):
             chunk_end_index = delimiter_index + 1
             if delimiter_index != -1:
                 self.eof = True
-                return self._write(output, chunk_end_index, raw_data)
+                return self._write(output, offset, chunk_end_index, raw_data)
 
-        if read_size < output_size:
-            self.eof = True
-
-        return self._write(output, read_size, raw_data)
+        return self._write(output, offset, read_size, raw_data)
 
     def _read(self, size):
         if len(self.remainder) >= size:
@@ -85,9 +97,9 @@ class LimitedReader(RawIOBase):
             self.source_eof = True
         return self.remainder + self.buffer[:read_size]
 
-    def _write(self, output, output_size, data):
+    def _write(self, output, offset, output_size, data):
         read_size = min(len(data), output_size)
-        output[:read_size] = data[:read_size]
+        output[offset:offset + read_size] = data[:read_size]
         self.remainder = data[read_size:] + self.remainder
         self.limit = self.limit - read_size
         return read_size

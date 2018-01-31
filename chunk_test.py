@@ -59,6 +59,15 @@ def test_limited_reads():
     assert handle.read(2) == b'89'
     assert handle.read(2) == b''
 
+def test_large_reads():
+    source = BytesIO(b'0123456789')
+
+    generator = chunk(source, limit=100)
+
+    handle = next(generator)
+    assert handle.read(100) == b'0123456789'
+    assert handle.read(100) == b''
+
 def test_limited_reader_with_small_input():
     source = BytesIO(b'0123456789')
 
