@@ -1,3 +1,4 @@
+from random import random
 from io import BytesIO
 from chunk import chunk, LimitedReader
 from pytest import raises
@@ -95,3 +96,41 @@ def test_limited_reader_with_medium_input_and_trailing_delimiter():
     handle.close()
 
     assert content == b'0123456789'
+
+def test_fuzzy():
+    bytes_to_read = int(2 ** (random() * 32767 / 1500))
+    desired_size = int(2 ** (random() * 32767 / 1500))
+
+    with open('/dev/urandom', 'rb') as handle:
+        content = handle.read(bytes_to_read)
+    source = BytesIO(content)
+    output = BytesIO()
+
+    for handle in chunk(source, limit=desired_size):
+        data = _read_one_chunk(handle)
+        output.write(data)
+
+    result = output.getvalue()
+    assert content == result, \
+        'source has {source_length} bytes, output has {output_length} bytes'.format(
+            source_length=len(content),
+            output_length=len(result)
+        )
+
+def _read_one_chunk(handle):
+    output = b''
+    last_read_was_partial = False
+
+    while True:
+        request_size = int(2 ** (random() * 22))
+        data = handle.read(request_size)
+        read_size = len(data)
+        output = output + data
+
+        assert read_size <= request_size
+
+        if data:
+            assert not last_read_was_partial
+        else:
+            return output
+        last_read_was_partial = read_size < request_size
