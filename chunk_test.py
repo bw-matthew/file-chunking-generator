@@ -46,6 +46,19 @@ def test_medium_input_no_delimiter():
     with raises(StopIteration):
         next(generator)
 
+def test_limited_reads():
+    source = BytesIO(b'0123456789')
+
+    generator = chunk(source, limit=2)
+
+    handle = next(generator)
+    assert handle.read(2) == b'01'
+    assert handle.read(2) == b'23'
+    assert handle.read(2) == b'45'
+    assert handle.read(2) == b'67'
+    assert handle.read(2) == b'89'
+    assert handle.read(2) == b''
+
 def test_limited_reader_with_small_input():
     source = BytesIO(b'0123456789')
 
