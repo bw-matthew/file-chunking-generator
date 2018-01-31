@@ -60,10 +60,11 @@ class LimitedReader(RawIOBase):
 
         if read_size > self.limit:
             delimiter_index = raw_data.find(self.delimiter, max(self.limit - 1, 0))
+            chunk_end_index = delimiter_index + 1
             if delimiter_index != -1:
                 self.eof = True
-                self.remainder = raw_data[delimiter_index + 1:] + self.remainder
-                return self._write(output, delimiter_index + 1, raw_data)
+                self.remainder = raw_data[chunk_end_index:] + self.remainder
+                return self._write(output, chunk_end_index, raw_data)
 
         if read_size < output_size:
             self.eof = True
