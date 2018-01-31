@@ -63,7 +63,6 @@ class LimitedReader(RawIOBase):
             chunk_end_index = delimiter_index + 1
             if delimiter_index != -1:
                 self.eof = True
-                self.remainder = raw_data[chunk_end_index:] + self.remainder
                 return self._write(output, chunk_end_index, raw_data)
 
         if read_size < output_size:
@@ -87,7 +86,8 @@ class LimitedReader(RawIOBase):
         return self.remainder + self.buffer[:read_size]
 
     def _write(self, output, output_size, data):
-        output[:output_size] = data[:output_size]
         read_size = min(len(data), output_size)
+        output[:read_size] = data[:read_size]
+        self.remainder = data[read_size:] + self.remainder
         self.limit = self.limit - read_size
         return read_size
