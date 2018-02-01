@@ -1,9 +1,8 @@
 """ Chunks a file into a bunch of files based on a delimiter and a size limit """
 
-from io import RawIOBase
+from io import RawIOBase, DEFAULT_BUFFER_SIZE
 
 DEFAULT_LIMIT = 1024 * 1024
-DEFAULT_BUFFER_SIZE = 4 * 1024
 DEFAULT_DELIMITER = b'\n'
 
 def chunk(
